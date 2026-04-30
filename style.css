@@ -1,0 +1,738 @@
+/* ============================================
+   YE LIUTONG — PORTFOLIO  (v3)
+   Watercolor-paper aesthetic, real-bookmark logic
+   ============================================ */
+
+:root {
+  --bg: #ffffff;
+
+  /* Paper colors — sampled from reference (rgb 246,239,237) */
+  --paper:        #f6efed;
+  --paper-edge:   #e8e0dd;   /* slightly darker for stack stripes */
+  --paper-shadow: rgba(60, 35, 25, 0.10);
+
+  --ink:      #1a1a1a;
+  --ink-soft: #5a5247;
+  --ink-mute: #9d968a;
+
+  /* Cover */
+  --cover-pink:      #e8c4c0;
+  --cover-pink-dark: #c89a96;
+  --cover-pink-deep: #a07570;
+
+  --serif: 'Lora', Georgia, serif;
+  --sans:  'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Book sizing */
+  --page-w: 360px;
+  --page-h: 500px;
+
+  /* Tabs */
+  --tab-w: 130px;   /* width of visible tab strip */
+  --tab-h: 28px;
+  --tab-gap: 6px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--serif);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ============================================
+   TOP HEADER
+   ============================================ */
+.top-header {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: 0.25em;
+  color: var(--ink-soft);
+  flex-shrink: 0;
+}
+
+#current-chapter { transition: opacity 0.4s ease; }
+
+/* ============================================
+   STAGE
+   ============================================ */
+.stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 30px 40px;
+  min-height: 0;
+}
+
+/* ============================================
+   BOOK SHELL
+   Holds book + tabs + thickness stripes.
+   Width = 2 × page (spread).
+   In cover-mode shifts left so the visible right-half cover is centered.
+   ============================================ */
+.book-shell {
+  position: relative;
+  width: calc(2 * var(--page-w));
+  height: var(--page-h);
+  transition: transform 700ms cubic-bezier(0.65, 0, 0.35, 1);
+  /* Default = cover-mode: cover sits in right half; shift LEFT by half page to center it */
+  transform: translateX(calc(-1 * var(--page-w) / 2));
+}
+
+.book-shell.is-spread {
+  transform: translateX(0);
+}
+
+/* ============================================
+   BOOK
+   ============================================ */
+.book {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 2;             /* In FRONT of tabs, so book covers overlap of tabs */
+  filter:
+    drop-shadow(0 16px 22px rgba(60, 40, 20, 0.16))
+    drop-shadow(0 4px 8px  rgba(60, 40, 20, 0.08));
+}
+
+/* ============================================
+   BOOK THICKNESS — vertical paper-stack stripes ONLY on left & right sides.
+   No bottom strip. Disappears immediately when on cover (no lag).
+   ============================================ */
+.side-edges-left,
+.side-edges-right {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 12px;
+  pointer-events: none;
+  z-index: -1;
+  /* Vertical lines = many thin pages stacked, viewed from the side.
+     Denser stripes for a richer "stack of paper" look. */
+  background:
+    linear-gradient(to right,
+      rgba(0,0,0,0.05) 0%,
+      transparent 30%,
+      transparent 70%,
+      rgba(0,0,0,0.10) 100%
+    ),
+    repeating-linear-gradient(
+      to right,
+      var(--paper-edge) 0,
+      var(--paper-edge) 1px,
+      #c8bea0 1px,
+      #c8bea0 2px
+    );
+  border-radius: 1px;
+  box-shadow: inset 0 1px 1px rgba(0,0,0,0.06);
+}
+
+/* Mirror the inner-shadow gradient for the LEFT side */
+.side-edges-left {
+  background:
+    linear-gradient(to right,
+      rgba(0,0,0,0.10) 0%,
+      transparent 30%,
+      transparent 70%,
+      rgba(0,0,0,0.05) 100%
+    ),
+    repeating-linear-gradient(
+      to right,
+      var(--paper-edge) 0,
+      var(--paper-edge) 1px,
+      #c8bea0 1px,
+      #c8bea0 2px
+    );
+}
+
+/* In spread-mode, edges hug the spread's outer edges */
+.book-shell.is-spread .side-edges-left  { left: -10px;  opacity: 1; }
+.book-shell.is-spread .side-edges-right { right: -10px; opacity: 1; }
+
+/* In cover-mode, only the right half is visible; hide left edge, show right edge at right of visible book */
+.book-shell:not(.is-spread) .side-edges-left  { left: 50%;   opacity: 0; }
+.book-shell:not(.is-spread) .side-edges-right { right: -10px; opacity: 1; }
+
+/* ============================================
+   COVER
+   ============================================ */
+.page--cover {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.12), transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(0,0,0,0.10), transparent 50%),
+    linear-gradient(135deg, var(--cover-pink) 0%, var(--cover-pink-dark) 100%) !important;
+  overflow: hidden;
+}
+
+.page--cover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(0,0,0,0.05) 1px, transparent 1.5px),
+    radial-gradient(circle at 80% 70%, rgba(0,0,0,0.05) 1px, transparent 1.5px),
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.06) 1px, transparent 1.5px);
+  background-size: 8px 8px, 12px 12px, 6px 6px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.page--cover::after {
+  content: '';
+  position: absolute;
+  inset: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.20),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+}
+
+.cover-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  z-index: 1;
+}
+
+.cover-name {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(20px, 3.4vw, 32px);
+  letter-spacing: 0.18em;
+  color: var(--cover-pink-deep);
+  text-shadow:
+    -1px -1px 1px rgba(255, 255, 255, 0.35),
+     1px  1px 2px rgba(80, 40, 40, 0.40),
+     0    0   1px rgba(80, 40, 40, 0.20);
+  margin-bottom: 12px;
+}
+
+.cover-divider {
+  width: 36px;
+  height: 1px;
+  background: var(--cover-pink-deep);
+  opacity: 0.45;
+  margin: 12px 0;
+}
+
+.cover-subtitle {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--cover-pink-deep);
+  opacity: 0.7;
+  text-transform: uppercase;
+  text-shadow:
+    -1px -1px 0 rgba(255, 255, 255, 0.25),
+     1px  1px 1px rgba(80, 40, 40, 0.30);
+}
+
+/* ============================================
+   INTERIOR PAGES — watercolor-paper texture from image
+   ============================================ */
+.page {
+  background-color: var(--paper);
+  background-image: url('paper-ref.webp');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  position: relative;
+  overflow: visible;
+}
+
+/* Spine-side shadow */
+.page--left::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 24px;
+  background: linear-gradient(to left, rgba(0,0,0,0.10), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+.page--right::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 24px;
+  background: linear-gradient(to right, rgba(0,0,0,0.10), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Page number */
+.page-number {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 10px;
+  color: var(--ink-mute);
+  letter-spacing: 0.1em;
+  z-index: 3;
+}
+
+/* ============================================
+   PAGE LAYOUTS
+   ============================================ */
+
+/* Project: LEFT page = text */
+.page-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 60px 50px;
+}
+
+.project-meta {
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.project-title {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(22px, 2.4vw, 30px);
+  line-height: 1.15;
+  color: var(--ink);
+  margin-bottom: 14px;
+  letter-spacing: -0.005em;
+}
+
+.project-year {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 22px;
+}
+
+.project-divider {
+  width: 28px;
+  height: 1px;
+  background: var(--ink-mute);
+  margin: 22px 0;
+}
+
+.project-blurb {
+  font-family: var(--serif);
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--ink-soft);
+  max-width: 240px;
+}
+
+/* Project: RIGHT page = image */
+.page-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 30px;
+}
+
+.image-frame {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+/* portrait: link wrapper sized correctly */
+.image-frame--portrait .image-link {
+  width: 100%;
+  max-width: 280px;
+  aspect-ratio: 2/3;
+  display: block;
+}
+.image-frame--portrait .image-link .placeholder-img,
+.image-frame--portrait .image-link img {
+  width: 100%;
+  height: 100%;
+}
+.image-frame--portrait > .placeholder-img,
+.image-frame--portrait > img {
+  width: 100%;
+  max-width: 280px;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+}
+
+/* landscape (double image stack) */
+.image-frame--landscape .placeholder-img,
+.image-frame--landscape img {
+  width: 100%;
+  max-width: 290px;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+}
+
+.placeholder-img {
+  background: linear-gradient(135deg, #ddd2bb 0%, #c8bca0 100%);
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  color: rgba(70, 50, 25, 0.45);
+  text-transform: uppercase;
+}
+
+.image-link {
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.2, 0, 0.2, 1);
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.image-link:hover { transform: scale(1.015); }
+
+.image-link:visited,
+.image-link:focus,
+.image-link:active {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Prose pages (about / contact) */
+.page-prose {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 60px 50px;
+}
+
+.page-prose .meta-label {
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.page-prose h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 28px;
+  margin-bottom: 22px;
+  letter-spacing: -0.005em;
+}
+
+.page-prose p {
+  font-family: var(--serif);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ink);
+  margin-bottom: 14px;
+}
+
+.contact-list { list-style: none; margin-top: 20px; }
+
+.contact-list li {
+  font-family: var(--serif);
+  font-size: 13px;
+  line-height: 2;
+  display: flex;
+  gap: 20px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  padding: 6px 0;
+}
+
+.contact-list .label {
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  min-width: 70px;
+  align-self: center;
+}
+
+.contact-list a {
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.contact-list a:hover { border-bottom-color: var(--ink); }
+
+/* ============================================
+   CHAPTER OPENER — RIGHT page only.
+   Left page is BLANK (we render a separate blank-left page).
+   ============================================ */
+.page-chapter-opener {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 40px;
+  text-align: center;
+}
+
+.chapter-opener-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.chapter-opener-label {
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.4em;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+}
+
+.chapter-opener-title {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(28px, 3vw, 42px);
+  color: var(--ink);
+  line-height: 1.05;
+  letter-spacing: -0.005em;
+}
+
+.chapter-opener-divider {
+  width: 28px;
+  height: 1px;
+  background: var(--ink-mute);
+  margin-top: 6px;
+}
+
+/* ============================================
+   STICKY-TAB STRIPS — bookmark-style, ALWAYS visible
+   Tabs sit BEHIND the book (z-index < book's). The portion that sticks out
+   past the book's edge is visible; the portion that overlaps the book is
+   hidden by the book — exactly like a real bookmark tucked into pages.
+
+   Each tab has a FIXED top (set via inline style from JS), so positions
+   never reflow when chapters move between left/right strips.
+
+   Each tab also has a small HORIZONTAL STAGGER (--tab-stagger) so earlier
+   chapters appear tucked slightly deeper into the book spine — like real
+   bookmarks at different page depths.
+   ============================================ */
+.tab-strip {
+  position: absolute;
+  top: 60px;
+  bottom: 0;
+  z-index: 1;             /* BEHIND the book */
+  pointer-events: none;
+  width: var(--tab-w);
+}
+
+.tab-strip > * { pointer-events: auto; }
+
+/* Left strip: anchored to LEFT EDGE of the visible spread.
+   Mostly outside the book; only a small overlap is hidden behind the book. */
+.tab-strip--left {
+  left: 0;
+  /* Push outside; small overlap (14px) tucked under the book */
+  transform: translateX(calc(-1 * var(--tab-w) + 14px));
+}
+
+/* Right strip: anchored to RIGHT EDGE. */
+.tab-strip--right {
+  right: 0;
+  transform: translateX(calc(var(--tab-w) - 14px));
+}
+
+/* In cover-mode, hide the left strip (no chapters are "behind" yet) */
+.book-shell:not(.is-spread) .tab-strip--left  { display: none; }
+
+.tab {
+  position: absolute;            /* fixed-top per-tab via inline style */
+  /* top is set inline by JS */
+  background: var(--tab-color, #e0e0e0);
+  border: none;
+  height: var(--tab-h);
+  width: var(--tab-w);
+  font-family: var(--sans);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: rgba(40, 30, 20, 0.7);
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  transition:
+    transform 0.3s cubic-bezier(0.2, 0, 0.2, 1),
+    filter 0.3s ease;
+}
+
+/* Left tabs: peek out to the left, rounded on left edge. The book-side
+   (right) edge is clipped so the tab looks tucked into the book thickness.
+   Text is pushed away from the book (toward the LEFT side of the tab) so it
+   stays visible regardless of stagger / overlap. */
+.tab-strip--left .tab {
+  border-radius: 4px 0 0 4px;
+  box-shadow:
+    -2px 1px 4px rgba(0, 0, 0, 0.10),
+    inset -1px 0 0 rgba(255, 255, 255, 0.30);
+  padding: 0 36px 0 12px;        /* big right padding pushes text away from book edge */
+  justify-content: flex-start;   /* text aligns to the outer (left) side */
+  text-align: left;
+  right: 0;
+  transform: translateX(var(--tab-stagger, 0px));
+}
+
+.tab-strip--left .tab:hover {
+  transform: translateX(calc(var(--tab-stagger, 0px) - 6px));
+  filter: brightness(1.04);
+}
+
+/* Right tabs: peek out to the right. Text on the OUTER (right) side, away from book. */
+.tab-strip--right .tab {
+  border-radius: 0 4px 4px 0;
+  box-shadow:
+    2px 1px 4px rgba(0, 0, 0, 0.10),
+    inset 1px 0 0 rgba(255, 255, 255, 0.30);
+  padding: 0 12px 0 36px;        /* big left padding pushes text away from book edge */
+  justify-content: flex-end;     /* text aligns to the outer (right) side */
+  text-align: right;
+  left: 0;
+  transform: translateX(calc(-1 * var(--tab-stagger, 0px)));
+}
+
+.tab-strip--right .tab:hover {
+  transform: translateX(calc(-1 * var(--tab-stagger, 0px) + 6px));
+  filter: brightness(1.04);
+}
+
+/* Active = current chapter. Use stronger contrast (not the hidden dot) */
+.tab.is-active {
+  filter: brightness(0.9) saturate(1.25);
+  font-weight: 700;
+  color: rgba(20, 15, 10, 1);
+  letter-spacing: 0.22em;
+}
+
+/* ============================================
+   BOTTOM CREDIT
+   ============================================ */
+.bottom-credit {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.35em;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   StPageFlip overrides
+   ============================================ */
+.stf__parent { user-select: none; }
+.stf__block  { box-shadow: none !important; }
+.stf__item   { background-color: transparent; overflow: visible !important; }
+
+.stf-page-wrapper,
+.stf__item > .page,
+.stf__item > .page--cover {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+
+.stf__outerShadow,
+.stf__innerShadow,
+.stf__hardShadow,
+.stf__hardInnerShadow {
+  opacity: 0.5 !important;
+  mix-blend-mode: multiply;
+}
+
+/* ============================================
+   MOBILE / TABLET LOCKOUT
+   On screens < 900px wide, hide the whole portfolio and show a single
+   message asking the user to open on desktop.
+   ============================================ */
+
+/* By default (desktop): hide the message */
+.mobile-block {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  /* Hide the whole book + chrome */
+  body > .top-header,
+  body > .stage,
+  body > .bottom-credit { display: none; }
+
+  /* Show the lockout message — full screen, watercolor paper background, Lora */
+  .mobile-block {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    padding: 36px;
+    background-color: var(--paper);
+    background-image: url('paper-ref.webp');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: 9999;
+  }
+
+  .mobile-block p {
+    font-family: var(--serif);
+    font-size: 16px;
+    line-height: 1.55;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+    text-align: center;
+    max-width: 320px;
+    margin: 0;
+  }
+}
+

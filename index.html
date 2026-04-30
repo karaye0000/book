@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ye Liutong — Portfolio</title>
+<meta name="description" content="Ye Liutong — Immersive Experience Designer. VR, AR, museum digitization, and tactile design for accessibility." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- Mobile / tablet block: shown ONLY on screens < 900px wide. Hides the rest of the site. -->
+<div class="mobile-block" aria-hidden="false">
+  <p>For the best experience, please open this portfolio on a desktop browser.</p>
+</div>
+
+<header class="top-header" aria-hidden="true">
+  <span id="current-chapter">( PORTFOLIO )</span>
+</header>
+
+<main class="stage">
+  <div class="book-shell" id="book-shell">
+
+    <!-- Vertical paper-stack stripes simulating book thickness on left and right -->
+    <div class="side-edges-left"  aria-hidden="true"></div>
+    <div class="side-edges-right" aria-hidden="true"></div>
+
+    <!-- Always-visible tab strips on the LEFT (already-turned chapters) and RIGHT (upcoming) -->
+    <nav class="tab-strip tab-strip--left"  id="tabs-left"  aria-label="Earlier chapters"></nav>
+    <nav class="tab-strip tab-strip--right" id="tabs-right" aria-label="Upcoming chapters"></nav>
+
+    <div id="book" class="book"></div>
+
+  </div>
+</main>
+
+<footer class="bottom-credit" aria-hidden="true">
+  <span>YE LIUTONG &mdash; IMMERSIVE EXPERIENCE DESIGNER</span>
+</footer>
+
+<script src="page-flip.browser.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
