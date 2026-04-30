@@ -575,6 +575,14 @@ function bindClickToFlip() {
     if (x >= rect.width / 2) {
       pageFlip.flipNext();
     } else {
+      // Predict: if we're flipping back AND the previous spread is the cover (page 0),
+      // remove is-spread immediately so the book-thickness left edge disappears as
+      // the cover starts closing — not after the animation completes.
+      const currentIdx = pageFlip.getCurrentPageIndex();
+      if (currentIdx <= 2) {
+        const shell = document.getElementById('book-shell');
+        if (shell) shell.classList.remove('is-spread');
+      }
       pageFlip.flipPrev();
     }
   });
@@ -692,7 +700,14 @@ function updateBookShellPosition(pageIndex) {
 
 function bindKeyboard() {
   document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowLeft'  && pageFlip) pageFlip.flipPrev();
+    if (e.key === 'ArrowLeft'  && pageFlip) {
+      // Predict transition back to cover — see comment in bindClickToFlip
+      if (pageFlip.getCurrentPageIndex() <= 2) {
+        const shell = document.getElementById('book-shell');
+        if (shell) shell.classList.remove('is-spread');
+      }
+      pageFlip.flipPrev();
+    }
     if (e.key === 'ArrowRight' && pageFlip) pageFlip.flipNext();
   });
 }
